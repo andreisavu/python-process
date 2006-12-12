@@ -27,8 +27,7 @@ else:
 def call(*args, **kwargs):
     waitargs = {}
     if "timeout" in kwargs:
-        waitargs["timeout"] = kwargs["timeout"]
-        del kwargs["timeout"]
+        waitargs["timeout"] = kwargs.pop("timeout")
 
     return Popen(*args, **kwargs).wait(**waitargs)
 
@@ -37,7 +36,7 @@ def check_call(*args, **kwargs):
     if retcode:
         cmd = kwargs.get("args")
         if cmd is None:
-            cmd = popenargs[0]
+            cmd = args[0]
         raise CalledProcessError(retcode, cmd)
 
 if not mswindows:

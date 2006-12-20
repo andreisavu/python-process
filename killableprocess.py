@@ -49,6 +49,20 @@ import os
 import time
 import types
 
+try:
+    from subprocess import CalledProcessError
+except ImportError:
+    # Python 2.4 doesn't implement CalledProcessError
+    class CalledProcessError(Exception):
+        """This exception is raised when a process run by check_call() returns
+        a non-zero exit status. The exit status will be stored in the
+        returncode attribute."""
+        def __init__(self, returncode, cmd):
+            self.returncode = returncode
+            self.cmd = cmd
+        def __str__(self):
+            return "Command '%s' returned non-zero exit status %d" % (self.cmd, self.returncode)
+
 mswindows = (sys.platform == "win32")
 
 if mswindows:
@@ -64,6 +78,9 @@ def call(*args, **kwargs):
     return Popen(*args, **kwargs).wait(**waitargs)
 
 def check_call(*args, **kwargs):
+    """Call a program with an optional timeout. If the program has a non-zero
+    exit status, raises a CalledProcessError."""
+
     retcode = call(*args, **kwargs)
     if retcode:
         cmd = kwargs.get("args")
@@ -76,6 +93,22 @@ if not mswindows:
         pass
 
 class Popen(subprocess.Popen):
+    if not mswindows:
+        # Override __init__ to set a preexec_fn
+        def __init__(self, *args, **kwargs):
+            if len(args) >= 7:
+                raise Exception("Arguments preexec_fn and after must be passed by keyword.")
+
+            real_preexec_fn = kwargs.pop("preexec_fn", None)
+            def setpgid_preexec_fn():
+                os.setpgid(0, 0)
+                if real_preexec_fn:
+                    apply(real_preexec_fn)
+
+            kwargs['preexec_fn'] = setpgid_preexec_fn
+
+            subprocess.Popen.__init__(self, *args, **kwargs)
+
     if mswindows:
         def _execute_child(self, args, executable, preexec_fn, close_fds,
                            cwd, env, universal_newlines, startupinfo,
@@ -91,10 +124,10 @@ class Popen(subprocess.Popen):
 
             if None not in (p2cread, c2pwrite, errwrite):
                 startupinfo.dwFlags |= winprocess.STARTF_USESTDHANDLES
-                startupinfo.hStdInput = p2cread
-                startupinfo.hStdOutput = c2pwrite
-                startupinfo.hStdError = errwrite
                 
+                startupinfo.hStdInput = int(p2cread)
+                startupinfo.hStdOutput = int(c2pwrite)
+                startupinfo.hStdError = int(errwrite)
             if shell:
                 startupinfo.dwFlags |= winprocess.STARTF_USESHOWWINDOW
                 startupinfo.wShowWindow = winprocess.SW_HIDE
@@ -106,13 +139,14 @@ class Popen(subprocess.Popen):
             self._job = winprocess.CreateJobObject()
 
             creationflags |= winprocess.CREATE_SUSPENDED
+            creationflags |= winprocess.CREATE_UNICODE_ENVIRONMENT
 
             hp, ht, pid, tid = winprocess.CreateProcess(
                 executable, args,
                 None, None, # No special security
                 1, # Must inherit handles!
                 creationflags,
-                env,
+                winprocess.EnvironmentBlock(env),
                 cwd, startupinfo)
             
             self._child_created = True

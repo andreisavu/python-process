@@ -2,7 +2,7 @@
 Python Killable Process
 -----------------------
 
-Code wrote by Benjamin Smedberg. Thanks! 
+Code wrote by Benjamin Smedberg and Peter Astrand. Excellent work guys! 
 
 "I’ve managed, at long last, to solve the problem of launching subprocesses from python. 
 I have created a python module which can launch a subprocess, wait for the process with a 

@@ -1,0 +1,23 @@
+
+Python Killable Process
+-----------------------
+
+Code wrote by Benjamin Smedergs. Thanks! 
+
+"I’ve managed, at long last, to solve the problem of launching subprocesses from python. 
+I have created a python module which can launch a subprocess, wait for the process with a 
+timeout, and kill that process and all of its sub-subprocesses correctly, on Windows, Mac, 
+and Linux. Source code is here. It requires python 2.4+ because it subclasses the subprocess 
+module. On Windows, it only works on Win2k+, and it requires the ctypes module, which comes 
+with Python 2.5+, or can be installed into earlier versions of Python."
+
+Links
+-----
+
+killableprocess.py:
+    http://benjamin.smedbergs.us/blog/2006-12-11/killableprocesspy/
+
+Adventures in Python: Lanuching Subprocess
+    http://benjamin.smedbergs.us/blog/2006-11-09/adventures-in-python-launching-subprocesses/
+
+
